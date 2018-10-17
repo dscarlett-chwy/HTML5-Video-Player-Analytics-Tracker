@@ -1,6 +1,5 @@
 README
-
-Wistia HTML5 Video Player
+# HTML5 Video Player
 
 Description:
 Create a basic HTML5 video player that can track how much of a video has been watched.
@@ -35,4 +34,4 @@ I calculated everything using math and metadata based on the video, it should be
 Tracking: Do you have an idea of the time/space complexity of your approach?
 
 I thought about it from a logical standpoint. The complexity of this approach was more geared around how video works on the web as a whole. I researched the HTML 5 Video spec and found/knew what event listeners I could rely on to give my calculations. My sample project was developed to meet the constraints of the assignment.
-# HTML5 Video Player
+
