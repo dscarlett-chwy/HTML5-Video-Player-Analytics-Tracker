@@ -13,14 +13,10 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Update Leaderboard
-      env:
-        GITHUB_TOKEN: ${{ secrets.HACKTOBERFEST_LEADERBOARD_TOKEN }}
       uses: actions/github-script@v6
       with:
+        github-token: ${{ secrets.HACKTOBERFEST_LEADERBOARD_TOKEN }}
         script: |
-          const core = require('@actions/core');
-          const github = require('@actions/github');
-
           // GitHub repository details
           const owner = context.repo.owner;
           const repo = context.repo.repo;
@@ -47,7 +43,7 @@ jobs:
 
           const fetchRecentPRs = async (repo) => {
             try {
-              core.info(`Fetching recent PRs for ${repo}`);
+              console.log(`Fetching recent PRs for ${repo}`);
               const [repoOwner, repoName] = repo.split('/');
               
               const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -61,7 +57,7 @@ jobs:
                 per_page: 100
               });
 
-              core.info(`Fetched ${prs.length} PRs for ${repo}`);
+              console.log(`Fetched ${prs.length} PRs for ${repo}`);
 
               const recentMergedPRs = prs.filter(pr => 
                 pr.merged_at && 
@@ -79,7 +75,7 @@ jobs:
 
               return hacktoberfestPRs;
             } catch (error) {
-              core.error(`Error fetching PRs for ${repo}: ${error.message}`);
+              console.error(`Error fetching PRs for ${repo}: ${error.message}`);
               return [];
             }
           };
@@ -107,7 +103,7 @@ jobs:
 
               return sortedLeaderboard;
             } catch (error) {
-              core.error(`Error generating leaderboard: ${error.message}`);
+              console.error(`Error generating leaderboard: ${error.message}`);
               return [];
             }
           };
@@ -131,20 +127,12 @@ jobs:
                 body: issueBody
               });
 
-              core.info("Issue updated successfully!");
+              console.log("Issue updated successfully!");
             } catch (error) {
-              core.setFailed(`Failed to update issue: ${error.message}`);
+              throw new Error(`Failed to update issue: ${error.message}`);
             }
           };
 
           // Main execution
-          async function run() {
-            try {
-              const leaderboardData = await generateLeaderboard();
-              await updateIssue(leaderboardData);
-            } catch (error) {
-              core.setFailed(error.message);
-            }
-          }
-
-          run();
+          const leaderboardData = await generateLeaderboard();
+          await updateIssue(leaderboardData);
