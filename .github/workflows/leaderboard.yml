@@ -118,9 +118,9 @@ jobs:
             const issueBody = `
           # Hacktoberfest Leaderboard
 
-          | Rank | Username | Points | PRs |
-          |------|----------|--------|-----|
-          ${leaderboardData.map(entry => `| ${entry.rank} | ${entry.username} | ${entry.points} | ${entry.prs} |`).join('\n')}
+          | Rank | Contributor | Points | PRs |
+          |------|-------------|--------|-----|
+          ${leaderboardData.map(entry => `| ${entry.rank} | @${entry.username} | ${entry.points} | ${entry.prs} |`).join('\n')}
 
           Last updated: ${new Date().toUTCString()}
           `;
