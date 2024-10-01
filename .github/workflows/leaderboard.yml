@@ -1,0 +1,150 @@
+name: Update Hacktoberfest Leaderboard
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Runs every hour at the start of the hour
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  update-leaderboard:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Update Leaderboard
+      env:
+        GITHUB_TOKEN: ${{ secrets.HACKTOBERFEST_LEADERBOARD_TOKEN }}
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const core = require('@actions/core');
+          const github = require('@actions/github');
+
+          // GitHub repository details
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const issueNumber = 1; // Replace with your actual issue number
+
+          // Repositories to track
+          const REPOS = [
+            'galaxy-bytes/main-test-repo',
+            'GCodeHouse/Cohort4',
+            'TBD54566975/developer.tbd.website'
+            //'blackgirlbytes/LunaFocus'
+          ];
+
+          const POINT_VALUES = {
+            small: 5,
+            medium: 10,
+            large: 15
+          };
+
+          const calculatePoints = (labels) => {
+            const size = labels.find(label => POINT_VALUES[label.name.toLowerCase()]);
+            return size ? POINT_VALUES[size.name.toLowerCase()] : POINT_VALUES.small;
+          };
+
+          const fetchRecentPRs = async (repo) => {
+            try {
+              core.info(`Fetching recent PRs for ${repo}`);
+              const [repoOwner, repoName] = repo.split('/');
+              
+              const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+              
+              const { data: prs } = await github.rest.pulls.list({
+                owner: repoOwner,
+                repo: repoName,
+                state: 'closed',
+                sort: 'updated',
+                direction: 'desc',
+                per_page: 100
+              });
+
+              core.info(`Fetched ${prs.length} PRs for ${repo}`);
+
+              const recentMergedPRs = prs.filter(pr => 
+                pr.merged_at && 
+                new Date(pr.merged_at) > new Date(oneHourAgo) &&
+                pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest')
+              );
+
+              const hacktoberfestPRs = recentMergedPRs.map(pr => ({
+                user: pr.user.login,
+                points: calculatePoints(pr.labels),
+                repo: repo,
+                prNumber: pr.number,
+                prTitle: pr.title,
+              }));
+
+              return hacktoberfestPRs;
+            } catch (error) {
+              core.error(`Error fetching PRs for ${repo}: ${error.message}`);
+              return [];
+            }
+          };
+
+          const generateLeaderboard = async () => {
+            try {
+              const allPRs = await Promise.all(REPOS.map(fetchRecentPRs));
+              const flatPRs = allPRs.flat();
+
+              const leaderboard = flatPRs.reduce((acc, pr) => {
+                if (!acc[pr.user]) acc[pr.user] = { points: 0, prs: 0 };
+                acc[pr.user].points += pr.points;
+                acc[pr.user].prs += 1;
+                return acc;
+              }, {});
+
+              const sortedLeaderboard = Object.entries(leaderboard)
+                .sort(([, a], [, b]) => b.points - a.points)
+                .map(([username, data], index) => ({ 
+                  rank: index + 1, 
+                  username, 
+                  points: data.points, 
+                  prs: data.prs 
+                }));
+
+              return sortedLeaderboard;
+            } catch (error) {
+              core.error(`Error generating leaderboard: ${error.message}`);
+              return [];
+            }
+          };
+
+          const updateIssue = async (leaderboardData) => {
+            const issueBody = `
+          # Hacktoberfest Leaderboard
+
+          | Rank | Username | Points | PRs |
+          |------|----------|--------|-----|
+          ${leaderboardData.map(entry => `| ${entry.rank} | ${entry.username} | ${entry.points} | ${entry.prs} |`).join('\n')}
+
+          Last updated: ${new Date().toUTCString()}
+          `;
+
+            try {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: issueBody
+              });
+
+              core.info("Issue updated successfully!");
+            } catch (error) {
+              core.setFailed(`Failed to update issue: ${error.message}`);
+            }
+          };
+
+          // Main execution
+          async function run() {
+            try {
+              const leaderboardData = await generateLeaderboard();
+              await updateIssue(leaderboardData);
+            } catch (error) {
+              core.setFailed(error.message);
+            }
+          }
+
+          run();
