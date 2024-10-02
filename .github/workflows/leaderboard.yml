@@ -19,7 +19,7 @@ jobs:
         script: |
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const issueNumber = 1680;
+          const issueNumber = 1;
 
           const REPOS = [
             'TBD54566975/developer.tbd.website',
