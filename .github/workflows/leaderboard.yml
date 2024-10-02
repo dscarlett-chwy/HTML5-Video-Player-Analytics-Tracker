@@ -19,7 +19,7 @@ jobs:
         script: |
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const issueNumber = 1;
+          const issueNumber = 1680;
 
           const REPOS = [
             'TBD54566975/developer.tbd.website',
@@ -39,6 +39,12 @@ jobs:
             small: 5,
             medium: 10,
             large: 15
+          };
+
+          const POINT_TO_LABEL = {
+            5: 'small',
+            10: 'medium',
+            15: 'large'
           };
 
           const calculatePoints = (labels) => {
@@ -112,7 +118,7 @@ jobs:
                   username, 
                   points: data.points, 
                   prs: data.prs,
-                  highestValue: data.highestValue
+                  highestValue: POINT_TO_LABEL[data.highestValue] || 'small'
                 }));
 
               return sortedLeaderboard;
@@ -151,7 +157,7 @@ jobs:
           - **Criteria:** Rankings are based on how many points you earn across all participating TBD repos. To ensure your PRs are successfully merged:
             - Ensure your contributions are aligned with our [project's CoC](https://developer.tbd.website/open-source/code-of-conduct).
             - Refer to each participating repo's [Contributing Guide](https://github.com/TBD54566975/developer.tbd.website/blob/main/CONTRIBUTING.md).
-          - **Tie-Breakers:** In the event of a tie in total points, the contributor with the highest value single contribution will be ranked higher.
+          - **Tie-Breakers:** In the event of a tie in total points, the contributor with the highest value single contribution (large > medium > small) will be ranked higher.
 
 
           ### 🚀 Get Featured:
