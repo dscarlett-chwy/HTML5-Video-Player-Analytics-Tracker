@@ -2,7 +2,7 @@ name: Update Hacktoberfest Leaderboard
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour at the start of the hour
+    # - cron: '0 * * * *'  # Runs every hour at the start of the hour
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
