@@ -1,0 +1,30 @@
+name: Create PR on Issue Open
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          branch_name="issue-${GITHUB_EVENT_ISSUE_NUMBER}"
+          git checkout -b $branch_name
+          git push -u origin $branch_name
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "issue-${GITHUB_EVENT_ISSUE_NUMBER}" \
+            --title "Address Issue #${GITHUB_EVENT_ISSUE_NUMBER}" \
+            --body "This PR is created in response to Issue #${GITHUB_EVENT_ISSUE_NUMBER}. Please review and update as necessary."
