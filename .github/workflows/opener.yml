@@ -10,12 +10,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Create branch and add commit
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Fetch the latest changes
+          git fetch origin
+          
           branch_name="issue-${GITHUB_EVENT_ISSUE_NUMBER}"
+          
+          # Check if the branch already exists
+          if git ls-remote --exit-code --heads origin $branch_name; then
+            # If it exists, delete it (both locally and remotely)
+            git push origin --delete $branch_name || true
+            git branch -D $branch_name || true
+          fi
+          
+          # Create and checkout the new branch
           git checkout -b $branch_name
           
           # Create a dummy file or modify an existing file
@@ -23,7 +38,9 @@ jobs:
           
           git add issue_${GITHUB_EVENT_ISSUE_NUMBER}.txt
           git commit -m "Initialize branch for Issue #${GITHUB_EVENT_ISSUE_NUMBER}"
-          git push -u origin $branch_name
+          
+          # Force push the branch
+          git push -f origin $branch_name
 
       - name: Create Pull Request
         env:
