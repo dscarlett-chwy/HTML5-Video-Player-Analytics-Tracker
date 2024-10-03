@@ -11,12 +11,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create branch
+      - name: Create branch and add commit
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           branch_name="issue-${GITHUB_EVENT_ISSUE_NUMBER}"
           git checkout -b $branch_name
+          
+          # Create a dummy file or modify an existing file
+          echo "This file is created in response to Issue #${GITHUB_EVENT_ISSUE_NUMBER}" > issue_${GITHUB_EVENT_ISSUE_NUMBER}.txt
+          
+          git add issue_${GITHUB_EVENT_ISSUE_NUMBER}.txt
+          git commit -m "Initialize branch for Issue #${GITHUB_EVENT_ISSUE_NUMBER}"
           git push -u origin $branch_name
 
       - name: Create Pull Request
