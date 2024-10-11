@@ -74,6 +74,9 @@ jobs:
                 const isMerged = !!pr.merged_at;
                 const isRecent = new Date(pr.merged_at) > new Date(thirtyDaysAgo);
                 const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
+                if (pr.user.login.toLowerCase() === 'johnnyevans32') {
+                  console.log(`Johnnyevans32 PR #${pr.number}: merged=${isMerged}, recent=${isRecent}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
+                }
                 return isMerged && isRecent && isHacktoberfest;
               }).map(pr => ({
                 user: pr.user.login,
@@ -82,6 +85,13 @@ jobs:
                 prNumber: pr.number,
                 prTitle: pr.title,
               }));
+
+              console.log(`Found ${hacktoberfestPRs.length} qualifying PRs for ${repo}`);
+              hacktoberfestPRs.forEach(pr => {
+                if (pr.user.toLowerCase() === 'johnnyevans32') {
+                  console.log(`  - Johnnyevans32 PR #${pr.prNumber}: ${pr.points} points`);
+                }
+              });
 
               return hacktoberfestPRs;
             } catch (error) {
@@ -95,6 +105,11 @@ jobs:
               const allPRs = await Promise.all(REPOS.map(fetchRecentPRs));
               const flatPRs = allPRs.flat();
 
+              console.log("All qualifying PRs for Johnnyevans32:");
+              flatPRs.filter(pr => pr.user.toLowerCase() === 'johnnyevans32').forEach(pr => {
+                console.log(`  - ${pr.repo} PR #${pr.prNumber}: ${pr.points} points`);
+              });
+
               const leaderboard = flatPRs.reduce((acc, pr) => {
                 if (!acc[pr.user]) {
                   acc[pr.user] = { points: 0, prs: 0, highestValue: 0 };
@@ -104,6 +119,10 @@ jobs:
                 acc[pr.user].highestValue = Math.max(acc[pr.user].highestValue, pr.points);
                 return acc;
               }, {});
+
+              if (leaderboard['Johnnyevans32']) {
+                console.log(`Johnnyevans32 stats before sorting: ${JSON.stringify(leaderboard['Johnnyevans32'])}`);
+              }
 
               const sortedLeaderboard = Object.entries(leaderboard)
                 .sort(([, a], [, b]) => {
@@ -120,6 +139,11 @@ jobs:
                   prs: data.prs,
                   highestValue: POINT_TO_LABEL[data.highestValue] || 'small'
                 }));
+
+              console.log("Sorted leaderboard:");
+              sortedLeaderboard.forEach(entry => {
+                console.log(`  - Rank ${entry.rank}: ${entry.username}, ${entry.points} points, ${entry.prs} PRs`);
+              });
 
               return sortedLeaderboard;
             } catch (error) {
