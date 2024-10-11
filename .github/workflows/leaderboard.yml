@@ -19,7 +19,7 @@ jobs:
         script: |
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const issueNumber = 1680;
+          const issueNumber = 1;
 
           const REPOS = [
             'TBD54566975/developer.tbd.website',
@@ -91,10 +91,7 @@ jobs:
                 const isMerged = !!pr.merged_at;
                 const mergedAt = new Date(pr.merged_at);
                 const isInHacktoberfestRange = mergedAt >= new Date(startDate) && mergedAt <= new Date(endDate);
-                const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase().includes('hacktoberfest'));
-                
-                console.log(`PR #${pr.number} by ${pr.user.login}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
-                
+                const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
                 return isMerged && isInHacktoberfestRange && isHacktoberfest;
               }).map(pr => ({
                 user: pr.user.login,
@@ -103,11 +100,6 @@ jobs:
                 prNumber: pr.number,
                 prTitle: pr.title,
               }));
-
-              console.log(`Found ${hacktoberfestPRs.length} qualifying PRs for ${repo}`);
-              hacktoberfestPRs.forEach(pr => {
-                console.log(`  - ${pr.user} PR #${pr.prNumber}: ${pr.points} points`);
-              });
 
               return hacktoberfestPRs;
             } catch (error) {
