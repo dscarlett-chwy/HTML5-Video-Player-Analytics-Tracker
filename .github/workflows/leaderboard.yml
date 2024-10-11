@@ -58,32 +58,42 @@ jobs:
               const [repoOwner, repoName] = repo.split('/');
               
               const currentYear = new Date().getFullYear();
-              const startDate = new Date(`${currentYear}-10-01T00:00:00Z`).toISOString();
-              const endDate = new Date(`${currentYear}-10-31T23:59:59Z`).toISOString();
+              const startDate = `${currentYear}-10-01T00:00:00Z`;
+              const endDate = `${currentYear}-10-31T23:59:59Z`;
               
-              const { data: prs } = await github.rest.pulls.list({
-                owner: repoOwner,
-                repo: repoName,
-                state: 'closed',
-                sort: 'updated',
-                direction: 'desc',
-                per_page: 400
-              });
+              let allPRs = [];
+              let page = 1;
+              
+              while (true) {
+                const { data: prs } = await github.rest.pulls.list({
+                  owner: repoOwner,
+                  repo: repoName,
+                  state: 'closed',
+                  sort: 'updated',
+                  direction: 'desc',
+                  per_page: 100,
+                  page: page
+                });
+                
+                if (prs.length === 0) break;
+                
+                allPRs = allPRs.concat(prs);
+                
+                const oldestPRDate = new Date(prs[prs.length - 1].merged_at);
+                if (oldestPRDate < new Date(startDate)) break;
+                
+                page++;
+              }
 
-              console.log(`Fetched ${prs.length} PRs for ${repo}`);
+              console.log(`Fetched ${allPRs.length} PRs for ${repo}`);
 
-              const hacktoberfestPRs = prs.filter(pr => {
+              const hacktoberfestPRs = allPRs.filter(pr => {
                 const isMerged = !!pr.merged_at;
-                const isInHacktoberfestRange = pr.merged_at && new Date(pr.merged_at) >= new Date(startDate) && new Date(pr.merged_at) <= new Date(endDate);
-                const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
+                const mergedAt = new Date(pr.merged_at);
+                const isInHacktoberfestRange = mergedAt >= new Date(startDate) && mergedAt <= new Date(endDate);
+                const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase().includes('hacktoberfest'));
                 
-                if (pr.number === 135 || pr.user.login.toLowerCase() === 'johnnyevans32') {
-                  console.log(`PR #${pr.number} by ${pr.user.login}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
-                }
-                
-                if (!isMerged || !isInHacktoberfestRange || !isHacktoberfest) {
-                  console.log(`PR #${pr.number} filtered out: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}`);
-                }
+                console.log(`PR #${pr.number} by ${pr.user.login}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
                 
                 return isMerged && isInHacktoberfestRange && isHacktoberfest;
               }).map(pr => ({
