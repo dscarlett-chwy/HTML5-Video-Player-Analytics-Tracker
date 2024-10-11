@@ -67,28 +67,24 @@ jobs:
                 state: 'closed',
                 sort: 'updated',
                 direction: 'desc',
-                per_page: 100
+                per_page: 250
               });
 
               console.log(`Fetched ${prs.length} PRs for ${repo}`);
 
-              if (repo === 'TBD54566975/tbd-examples') {
-                console.log("Detailed log for TBD54566975/tbd-examples:");
-                prs.forEach(pr => {
-                  const isMerged = !!pr.merged_at;
-                  const isInHacktoberfestRange = pr.merged_at && pr.merged_at >= startDate && pr.merged_at <= endDate;
-                  const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
-                  console.log(`PR #${pr.number} by ${pr.user.login}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
-                });
-              }
-
               const hacktoberfestPRs = prs.filter(pr => {
                 const isMerged = !!pr.merged_at;
-                const isInHacktoberfestRange = pr.merged_at && pr.merged_at >= startDate && pr.merged_at <= endDate;
+                const isInHacktoberfestRange = pr.merged_at && new Date(pr.merged_at) >= new Date(startDate) && new Date(pr.merged_at) <= new Date(endDate);
                 const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
-                if (pr.user.login.toLowerCase() === 'johnnyevans32' || repo === 'TBD54566975/tbd-examples') {
-                  console.log(`${pr.user.login} PR #${pr.number}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
+                
+                if (pr.number === 135 || pr.user.login.toLowerCase() === 'johnnyevans32') {
+                  console.log(`PR #${pr.number} by ${pr.user.login}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
                 }
+                
+                if (!isMerged || !isInHacktoberfestRange || !isHacktoberfest) {
+                  console.log(`PR #${pr.number} filtered out: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}`);
+                }
+                
                 return isMerged && isInHacktoberfestRange && isHacktoberfest;
               }).map(pr => ({
                 user: pr.user.login,
@@ -100,9 +96,7 @@ jobs:
 
               console.log(`Found ${hacktoberfestPRs.length} qualifying PRs for ${repo}`);
               hacktoberfestPRs.forEach(pr => {
-                if (pr.user.toLowerCase() === 'johnnyevans32' || repo === 'TBD54566975/tbd-examples') {
-                  console.log(`  - ${pr.user} PR #${pr.prNumber}: ${pr.points} points`);
-                }
+                console.log(`  - ${pr.user} PR #${pr.prNumber}: ${pr.points} points`);
               });
 
               return hacktoberfestPRs;
@@ -117,9 +111,9 @@ jobs:
               const allPRs = await Promise.all(REPOS.map(fetchRecentPRs));
               const flatPRs = allPRs.flat();
 
-              console.log("All qualifying PRs for Johnnyevans32:");
-              flatPRs.filter(pr => pr.user.toLowerCase() === 'johnnyevans32').forEach(pr => {
-                console.log(`  - ${pr.repo} PR #${pr.prNumber}: ${pr.points} points`);
+              console.log("All qualifying PRs:");
+              flatPRs.forEach(pr => {
+                console.log(`  - ${pr.repo} PR #${pr.prNumber} by ${pr.user}: ${pr.points} points`);
               });
 
               const leaderboard = flatPRs.reduce((acc, pr) => {
@@ -132,9 +126,10 @@ jobs:
                 return acc;
               }, {});
 
-              if (leaderboard['Johnnyevans32']) {
-                console.log(`Johnnyevans32 stats before sorting: ${JSON.stringify(leaderboard['Johnnyevans32'])}`);
-              }
+              console.log("Leaderboard before sorting:");
+              Object.entries(leaderboard).forEach(([user, data]) => {
+                console.log(`  - ${user}: ${data.points} points, ${data.prs} PRs, highest value: ${data.highestValue}`);
+              });
 
               const sortedLeaderboard = Object.entries(leaderboard)
                 .sort(([, a], [, b]) => {
@@ -244,7 +239,7 @@ jobs:
             - [Hacktoberfest Task: Aliased](https://github.com/csuwildcat/aliased/issues/4)
 
 
-          Excited to see everyone's hard work. Thank you so much for your invaluable contributions,
+          Excited to see everyone's hard work. Thank you so much for your invaluable contributions, and let the fun competition begin! 
 
           Last updated: ${new Date().toUTCString()}
           `;
