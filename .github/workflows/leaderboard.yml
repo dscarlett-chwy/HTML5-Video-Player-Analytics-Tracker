@@ -19,7 +19,7 @@ jobs:
         script: |
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const issueNumber = 1; // Replace with your actual issue number
+          const issueNumber = 1680;
 
           const REPOS = [
             'TBD54566975/developer.tbd.website',
@@ -121,11 +121,6 @@ jobs:
               const allPRs = await Promise.all(REPOS.map(fetchRecentPRs));
               const flatPRs = allPRs.flat();
 
-              console.log("All qualifying PRs:");
-              flatPRs.forEach(pr => {
-                console.log(`  - ${pr.repo} PR #${pr.prNumber} by ${pr.user}: ${pr.points} points`);
-              });
-
               const leaderboard = flatPRs.reduce((acc, pr) => {
                 if (!acc[pr.user]) {
                   acc[pr.user] = { points: 0, prs: 0, highestValue: 0 };
@@ -135,11 +130,6 @@ jobs:
                 acc[pr.user].highestValue = Math.max(acc[pr.user].highestValue, pr.points);
                 return acc;
               }, {});
-
-              console.log("Leaderboard before sorting:");
-              Object.entries(leaderboard).forEach(([user, data]) => {
-                console.log(`  - ${user}: ${data.points} points, ${data.prs} PRs, highest value: ${data.highestValue}`);
-              });
 
               const sortedLeaderboard = Object.entries(leaderboard)
                 .sort(([, a], [, b]) => {
@@ -157,11 +147,6 @@ jobs:
                   highestValue: POINT_TO_LABEL[data.highestValue] || 'small'
                 }));
 
-              console.log("Sorted leaderboard:");
-              sortedLeaderboard.forEach(entry => {
-                console.log(`  - Rank ${entry.rank}: ${entry.username}, ${entry.points} points, ${entry.prs} PRs`);
-              });
-
               return sortedLeaderboard;
             } catch (error) {
               console.error(`Error generating leaderboard: ${error.message}`);
@@ -175,7 +160,7 @@ jobs:
 
           ### 🌟 **Current Rankings:**
 
-          | Rank | Contributor | Points | PRs | Highest Value PR |
+          | Rank | Contributor | Points | PRs | Biggest PR to Date |
           |------|-------------|--------|-----|------------------|
           ${leaderboardData.map(entry => `| ${entry.rank} | @${entry.username} | ${entry.points} | ${entry.prs} | ${entry.highestValue} |`).join('\n')}
 
