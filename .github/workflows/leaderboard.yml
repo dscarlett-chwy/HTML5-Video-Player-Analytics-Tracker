@@ -19,7 +19,7 @@ jobs:
         script: |
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const issueNumber = 1;
+          const issueNumber = 1; // Replace with your actual issue number
 
           const REPOS = [
             'TBD54566975/developer.tbd.website',
@@ -57,7 +57,9 @@ jobs:
               console.log(`Fetching recent PRs for ${repo}`);
               const [repoOwner, repoName] = repo.split('/');
               
-              const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+              const currentYear = new Date().getFullYear();
+              const startDate = new Date(`${currentYear}-10-01T00:00:00Z`).toISOString();
+              const endDate = new Date(`${currentYear}-10-31T23:59:59Z`).toISOString();
               
               const { data: prs } = await github.rest.pulls.list({
                 owner: repoOwner,
@@ -70,14 +72,24 @@ jobs:
 
               console.log(`Fetched ${prs.length} PRs for ${repo}`);
 
+              if (repo === 'TBD54566975/tbd-examples') {
+                console.log("Detailed log for TBD54566975/tbd-examples:");
+                prs.forEach(pr => {
+                  const isMerged = !!pr.merged_at;
+                  const isInHacktoberfestRange = pr.merged_at && pr.merged_at >= startDate && pr.merged_at <= endDate;
+                  const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
+                  console.log(`PR #${pr.number} by ${pr.user.login}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
+                });
+              }
+
               const hacktoberfestPRs = prs.filter(pr => {
                 const isMerged = !!pr.merged_at;
-                const isRecent = new Date(pr.merged_at) > new Date(thirtyDaysAgo);
+                const isInHacktoberfestRange = pr.merged_at && pr.merged_at >= startDate && pr.merged_at <= endDate;
                 const isHacktoberfest = pr.labels.some(label => label.name.toLowerCase() === 'hacktoberfest');
-                if (pr.user.login.toLowerCase() === 'johnnyevans32') {
-                  console.log(`Johnnyevans32 PR #${pr.number}: merged=${isMerged}, recent=${isRecent}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
+                if (pr.user.login.toLowerCase() === 'johnnyevans32' || repo === 'TBD54566975/tbd-examples') {
+                  console.log(`${pr.user.login} PR #${pr.number}: merged=${isMerged}, inHacktoberfestRange=${isInHacktoberfestRange}, hacktoberfest=${isHacktoberfest}, mergedAt=${pr.merged_at}`);
                 }
-                return isMerged && isRecent && isHacktoberfest;
+                return isMerged && isInHacktoberfestRange && isHacktoberfest;
               }).map(pr => ({
                 user: pr.user.login,
                 points: calculatePoints(pr.labels),
@@ -88,8 +100,8 @@ jobs:
 
               console.log(`Found ${hacktoberfestPRs.length} qualifying PRs for ${repo}`);
               hacktoberfestPRs.forEach(pr => {
-                if (pr.user.toLowerCase() === 'johnnyevans32') {
-                  console.log(`  - Johnnyevans32 PR #${pr.prNumber}: ${pr.points} points`);
+                if (pr.user.toLowerCase() === 'johnnyevans32' || repo === 'TBD54566975/tbd-examples') {
+                  console.log(`  - ${pr.user} PR #${pr.prNumber}: ${pr.points} points`);
                 }
               });
 
@@ -232,7 +244,7 @@ jobs:
             - [Hacktoberfest Task: Aliased](https://github.com/csuwildcat/aliased/issues/4)
 
 
-          Excited to see everyone's hard work. Thank you so much for your invaluable contributions, and let the fun competition begin! 
+          Excited to see everyone's hard work. Thank you so much for your invaluable contributions,
 
           Last updated: ${new Date().toUTCString()}
           `;
